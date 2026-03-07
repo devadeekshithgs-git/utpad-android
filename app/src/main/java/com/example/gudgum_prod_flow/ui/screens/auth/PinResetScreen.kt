@@ -193,19 +193,28 @@ fun PinResetScreen(
                     Spacer(Modifier.height(16.dp))
 
                     NumericKeypad(
-                        onDigitPressed = { digit ->
+                        onDigit = { digit ->
                             if (newPin.length < 6) newPin += digit.toString()
                         },
-                        onBackspacePressed = {
+                        onBackspace = {
                             if (newPin.isNotEmpty()) newPin = newPin.dropLast(1)
                         },
-                        onSubmitPressed = {
-                            if (newPin.length == 6) onSubmit()
-                        },
-                        submitEnabled = newPin.length == 6,
-                        isLoading = false,
+                        bottomLeftIcon = { Spacer(Modifier.size(24.dp)) },
                         enabled = true
                     )
+
+                    Spacer(Modifier.height(24.dp))
+
+                    Button(
+                        onClick = {
+                            if (newPin.length == 6) onSubmit()
+                        },
+                        enabled = newPin.length == 6,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Submit New PIN", style = MaterialTheme.typography.labelLarge)
+                    }
 
                     Spacer(Modifier.height(12.dp))
 

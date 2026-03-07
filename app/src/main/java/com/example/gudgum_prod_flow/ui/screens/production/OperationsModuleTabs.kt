@@ -18,6 +18,22 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.gudgum_prod_flow.ui.navigation.AppRoute
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.example.gudgum_prod_flow.ui.theme.UtpadPrimary
+import com.example.gudgum_prod_flow.ui.theme.UtpadSurface
+import com.example.gudgum_prod_flow.ui.theme.UtpadTextPrimary
+
 private data class ModuleTab(
     val route: String,
     val label: String,
@@ -40,25 +56,36 @@ fun OperationsModuleTabs(
     val visibleTabs = moduleTabs.filter { it.route in allowedRoutes }
 
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(vertical = 8.dp),
     ) {
         items(visibleTabs) { tab ->
-            FilterChip(
-                selected = currentRoute == tab.route,
-                onClick = {
-                    if (currentRoute != tab.route) {
-                        onNavigateToRoute(tab.route)
+            val isSelected = currentRoute == tab.route
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (isSelected) UtpadPrimary else UtpadSurface)
+                    .clickable {
+                        if (!isSelected) {
+                            onNavigateToRoute(tab.route)
+                        }
                     }
-                },
-                label = { Text(tab.label, style = MaterialTheme.typography.labelLarge) },
-                leadingIcon = {
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = null,
+                        tint = if (isSelected) Color.White else UtpadTextPrimary,
                     )
-                },
-            )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = tab.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isSelected) Color.White else UtpadTextPrimary
+                    )
+                }
+            }
         }
     }
 }

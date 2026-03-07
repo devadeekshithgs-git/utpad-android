@@ -32,9 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.gudgum_prod_flow.ui.theme.ManuFlowSuccessContainer
-import com.example.gudgum_prod_flow.ui.theme.ManuFlowWarningContainer
-import com.example.gudgum_prod_flow.ui.theme.SuccessGreen
+import com.example.gudgum_prod_flow.ui.theme.UtpadSuccess
+import com.example.gudgum_prod_flow.ui.theme.UtpadWarning
 import kotlinx.coroutines.delay
 
 sealed class ConnectivityState {
@@ -59,9 +58,9 @@ fun OfflineBanner(
         modifier = modifier
     ) {
         val backgroundColor = when (state) {
-            is ConnectivityState.Offline -> ManuFlowWarningContainer
+            is ConnectivityState.Offline -> UtpadWarning.copy(alpha = 0.2f)
             is ConnectivityState.Syncing -> MaterialTheme.colorScheme.primaryContainer
-            is ConnectivityState.SyncComplete -> ManuFlowSuccessContainer
+            is ConnectivityState.SyncComplete -> UtpadSuccess.copy(alpha = 0.2f)
             is ConnectivityState.SyncError -> MaterialTheme.colorScheme.errorContainer
             else -> Color.Transparent
         }
@@ -118,12 +117,12 @@ fun OfflineBanner(
                                 Icons.Rounded.CloudDone,
                                 contentDescription = "Synced",
                                 modifier = Modifier.size(20.dp),
-                                tint = SuccessGreen
+                                tint = UtpadSuccess
                             )
                             Text(
                                 text = "All synced",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = SuccessGreen,
+                                color = UtpadSuccess,
                                 modifier = Modifier.weight(1f)
                             )
                             LaunchedEffect(Unit) {

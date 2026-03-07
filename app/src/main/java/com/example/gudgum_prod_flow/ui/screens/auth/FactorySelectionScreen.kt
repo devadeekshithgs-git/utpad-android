@@ -32,8 +32,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.gudgum_prod_flow.ui.theme.ManuFlowWarningContainer
-import com.example.gudgum_prod_flow.ui.theme.WarningAmber
 
 data class FactoryGateAssignment(
     val factoryId: String,

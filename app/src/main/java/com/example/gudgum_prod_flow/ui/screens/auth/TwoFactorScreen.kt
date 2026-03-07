@@ -47,7 +47,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.gudgum_prod_flow.ui.theme.WarningAmber
+import com.example.gudgum_prod_flow.ui.theme.UtpadWarning
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -143,7 +143,7 @@ fun TwoFactorScreen(
                 // Countdown
                 val countdownColor = when {
                     countdownSeconds < 5 -> MaterialTheme.colorScheme.error
-                    countdownSeconds < 10 -> WarningAmber
+                    countdownSeconds < 10 -> UtpadWarning
                     else -> MaterialTheme.colorScheme.primary
                 }
 

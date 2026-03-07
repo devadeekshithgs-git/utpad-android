@@ -40,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -57,7 +58,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
 import com.example.gudgum_prod_flow.ui.components.BarcodeScannerButton
+import com.example.gudgum_prod_flow.ui.theme.UtpadPrimary
+import com.example.gudgum_prod_flow.ui.theme.UtpadSuccess
+import com.example.gudgum_prod_flow.ui.theme.UtpadOutline
+import com.example.gudgum_prod_flow.ui.theme.UtpadTextPrimary
+import com.example.gudgum_prod_flow.ui.theme.UtpadTextSecondary
+import com.example.gudgum_prod_flow.ui.theme.UtpadBackground
+import com.example.gudgum_prod_flow.ui.theme.UtpadSurface
+import androidx.compose.material3.TopAppBarDefaults
 import com.example.gudgum_prod_flow.ui.navigation.AppRoute
 import com.example.gudgum_prod_flow.ui.viewmodels.InwardingViewModel
 import com.example.gudgum_prod_flow.ui.viewmodels.SubmitState
@@ -107,30 +118,27 @@ fun InwardingScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Column {
-                        Text("Inwarding Material", fontWeight = FontWeight.Bold)
-                        Text(
-                            text = "Raw material entry and billing",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Text("Inwarding Wizard", fontWeight = FontWeight.Bold, color = UtpadTextPrimary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
+                            tint = UtpadTextPrimary
                         )
                     }
                 },
                 actions = {
                     TextButton(onClick = onLogout) {
-                        Text("Logout")
+                        Text("Logout", color = UtpadPrimary)
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = UtpadBackground
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -146,7 +154,7 @@ fun InwardingScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 132.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
             ) {
                 OperationsModuleTabs(
                     currentRoute = AppRoute.Inwarding,
@@ -154,13 +162,22 @@ fun InwardingScreen(
                     onNavigateToRoute = onNavigateToRoute,
                 )
 
-                SectionTitle("Step $currentStep of 3")
+                WizardProgressBar(
+                    currentStep = currentStep,
+                    totalSteps = 3,
+                    stepTitle = when(currentStep) {
+                        1 -> "Vendor & Ingredient"
+                        2 -> "Batch Details"
+                        else -> "Billing & Photo"
+                    }
+                )
 
                 when (currentStep) {
                     1 -> {
                         Card(
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = UtpadSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -168,11 +185,12 @@ fun InwardingScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = "Select Ingredient",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        text = "SOURCE DETAILS",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = UtpadTextSecondary,
+                                        fontWeight = FontWeight.SemiBold
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth(),
@@ -187,10 +205,19 @@ fun InwardingScreen(
                                                 value = selectedIngredient?.name ?: "",
                                                 onValueChange = {},
                                                 readOnly = true,
-                                                placeholder = { Text("Choose ingredient") },
+                                                placeholder = { Text("Choose ingredient", color = UtpadTextSecondary) },
                                                 trailingIcon = {
                                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = ingredientExpanded)
                                                 },
+                                                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                                    focusedBorderColor = UtpadPrimary,
+                                                    unfocusedBorderColor = UtpadOutline,
+                                                    focusedContainerColor = UtpadBackground,
+                                                    unfocusedContainerColor = UtpadSurface,
+                                                    focusedTextColor = UtpadTextPrimary,
+                                                    unfocusedTextColor = UtpadTextPrimary
+                                                ),
+                                                shape = RoundedCornerShape(16.dp),
                                                 modifier = Modifier
                                                     .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                                     .fillMaxWidth(),
@@ -229,7 +256,7 @@ fun InwardingScreen(
                                             Icon(
                                                 imageVector = Icons.Filled.Add,
                                                 contentDescription = "Add ingredient",
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                tint = UtpadPrimary,
                                             )
                                         }
                                     }
@@ -237,11 +264,12 @@ fun InwardingScreen(
                                 
                                 Column {
                                     Text(
-                                        text = "Vendor",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        text = "MATERIAL DETAILS",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = UtpadTextSecondary,
+                                        fontWeight = FontWeight.SemiBold
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     var vendorExpanded by remember { mutableStateOf(false) }
                                     ExposedDropdownMenuBox(
                                         expanded = vendorExpanded,
@@ -251,10 +279,19 @@ fun InwardingScreen(
                                             value = selectedVendor?.name ?: "",
                                             onValueChange = {},
                                             readOnly = true,
-                                            placeholder = { Text("Select vendor...") },
+                                            placeholder = { Text("Select vendor...", color = UtpadTextSecondary) },
                                             trailingIcon = {
                                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = vendorExpanded)
                                             },
+                                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = UtpadPrimary,
+                                                unfocusedBorderColor = UtpadOutline,
+                                                focusedContainerColor = UtpadBackground,
+                                                unfocusedContainerColor = UtpadSurface,
+                                                focusedTextColor = UtpadTextPrimary,
+                                                unfocusedTextColor = UtpadTextPrimary
+                                            ),
+                                            shape = RoundedCornerShape(16.dp),
                                             modifier = Modifier
                                                 .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                                 .fillMaxWidth(),
@@ -281,8 +318,9 @@ fun InwardingScreen(
                     }
                     2 -> {
                         Card(
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = UtpadSurface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -291,9 +329,10 @@ fun InwardingScreen(
                                 // Removed Select Ingredient
                         Column {
                             Text(
-                                text = "Batch Barcode",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "BATCH BARCODE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(
@@ -328,16 +367,26 @@ fun InwardingScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Quantity",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = "QUANTITY",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = UtpadTextSecondary,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = quantity,
                                     onValueChange = viewModel::onQuantityChanged,
-                                    placeholder = { Text("0.00") },
+                                    placeholder = { Text("0.00", color = UtpadTextSecondary) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = UtpadPrimary,
+                                        unfocusedBorderColor = UtpadOutline,
+                                        focusedContainerColor = UtpadBackground,
+                                        unfocusedContainerColor = UtpadSurface,
+                                        focusedTextColor = UtpadTextPrimary,
+                                        unfocusedTextColor = UtpadTextPrimary
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                 )
@@ -345,9 +394,10 @@ fun InwardingScreen(
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Unit",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = "UNIT",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = UtpadTextSecondary,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 var unitExpanded by remember { mutableStateOf(false) }
@@ -359,6 +409,15 @@ fun InwardingScreen(
                                         value = selectedUnit,
                                         onValueChange = {},
                                         readOnly = true,
+                                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = UtpadPrimary,
+                                            unfocusedBorderColor = UtpadOutline,
+                                            focusedContainerColor = UtpadBackground,
+                                            unfocusedContainerColor = UtpadSurface,
+                                            focusedTextColor = UtpadTextPrimary,
+                                            unfocusedTextColor = UtpadTextPrimary
+                                        ),
+                                        shape = RoundedCornerShape(16.dp),
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded)
                                         },
@@ -387,24 +446,45 @@ fun InwardingScreen(
 
                         Column {
                             Text(
-                                text = "Expiry Date",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "EXPIRY DATE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             var showDatePicker by remember { mutableStateOf(false) }
                             
-                            OutlinedTextField(
-                                value = expiryDate,
-                                onValueChange = viewModel::onExpiryDateChanged,
-                                placeholder = { Text("YYYY-MM-DD") },
-                                singleLine = true,
-                                readOnly = true,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            
-                            Button(onClick = { showDatePicker = true }, modifier = Modifier.padding(top = 8.dp)) {
-                                Text("Pick Date")
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedTextField(
+                                    value = expiryDate,
+                                    onValueChange = viewModel::onExpiryDateChanged,
+                                    placeholder = { Text("dd-mm-yyyy", color = UtpadTextSecondary) },
+                                    singleLine = true,
+                                    readOnly = true,
+                                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = UtpadPrimary,
+                                        unfocusedBorderColor = UtpadOutline,
+                                        focusedContainerColor = UtpadBackground,
+                                        unfocusedContainerColor = UtpadSurface,
+                                        focusedTextColor = UtpadTextPrimary,
+                                        unfocusedTextColor = UtpadTextPrimary
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.PhotoCamera, // Using a generic icon but ideally calendar icon
+                                            contentDescription = "Pick Date",
+                                            tint = UtpadTextPrimary
+                                        )
+                                    }
+                                )
+                                // Invisible surface to capture clicks
+                                Surface(
+                                    modifier = Modifier.matchParentSize(),
+                                    color = androidx.compose.ui.graphics.Color.Transparent,
+                                    onClick = { showDatePicker = true }
+                                ) {}
                             }
 
                             if (showDatePicker) {
@@ -438,8 +518,9 @@ fun InwardingScreen(
             }
             3 -> {
                 Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = UtpadSurface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -447,43 +528,61 @@ fun InwardingScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Bill Number",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "BILL NUMBER",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = billNumber,
                                 onValueChange = viewModel::onBillNumberChanged,
-                                placeholder = { Text("Enter bill number") },
+                                placeholder = { Text("e.g. INV-2023-001", color = UtpadTextSecondary) },
+                                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = UtpadPrimary,
+                                    unfocusedBorderColor = UtpadOutline,
+                                    focusedContainerColor = UtpadBackground,
+                                    unfocusedContainerColor = UtpadSurface,
+                                    focusedTextColor = UtpadTextPrimary,
+                                    unfocusedTextColor = UtpadTextPrimary
+                                ),
+                                shape = RoundedCornerShape(16.dp),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
 
                         Card(
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                                containerColor = UtpadBackground,
                             ),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 18.dp, horizontal = 12.dp),
+                                    .padding(vertical = 32.dp, horizontal = 12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.PhotoCamera,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = UtpadPrimary,
+                                    modifier = Modifier.size(36.dp)
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = "Tap to capture or upload bill image",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = "Capture Bill Photo",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = UtpadTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "PNG, JPG up to 10MB",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = UtpadTextSecondary,
                                 )
                             }
                         }
@@ -497,13 +596,14 @@ fun InwardingScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
-                shadowElevation = 10.dp,
-                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 20.dp,
+                color = UtpadSurface,
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         OutlinedButton(
                             onClick = { 
@@ -515,13 +615,16 @@ fun InwardingScreen(
                             },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(54.dp),
-                            shape = RoundedCornerShape(14.dp),
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = UtpadTextPrimary
+                            )
                         ) {
                             if (currentStep > 1) {
-                                Text("Back")
+                                Text("Back", fontWeight = FontWeight.Bold)
                             } else {
-                                Text("Reset")
+                                Text("Reset", fontWeight = FontWeight.Bold)
                             }
                         }
                         
@@ -535,14 +638,18 @@ fun InwardingScreen(
                             },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(54.dp),
-                            shape = RoundedCornerShape(14.dp),
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = UtpadPrimary,
+                                contentColor = Color.White
+                            ),
                             enabled = submitState !is SubmitState.Loading,
                         ) {
                             if (currentStep < 3) {
-                                Text("Next")
+                                Text("Continue", fontWeight = FontWeight.Bold)
                             } else {
-                                Text("Confirm Inward")
+                                Text("Confirm Inward", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -565,7 +672,66 @@ private fun SectionTitle(title: String) {
     Text(
         text = title.uppercase(),
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = UtpadTextSecondary,
         fontWeight = FontWeight.SemiBold,
     )
+}
+
+@Composable
+private fun WizardProgressBar(
+    currentStep: Int,
+    totalSteps: Int,
+    stepTitle: String,
+    modifier: Modifier = Modifier
+) {
+    val progress = currentStep.toFloat() / totalSteps.toFloat()
+    val percentage = (progress * 100).toInt()
+    
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "STEP $currentStep OF $totalSteps",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = UtpadPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stepTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = UtpadTextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text(
+                text = "$percentage%",
+                style = MaterialTheme.typography.labelMedium,
+                color = UtpadTextSecondary,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        
+        // Progress Bar Line
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .background(UtpadOutline, RoundedCornerShape(3.dp))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = progress)
+                    .height(6.dp)
+                    .background(UtpadPrimary, RoundedCornerShape(3.dp))
+            )
+        }
+    }
 }

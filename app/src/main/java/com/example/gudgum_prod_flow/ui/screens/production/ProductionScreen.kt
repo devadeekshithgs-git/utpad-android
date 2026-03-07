@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
@@ -58,6 +59,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gudgum_prod_flow.ui.navigation.AppRoute
 import com.example.gudgum_prod_flow.ui.viewmodels.ProductionViewModel
 import com.example.gudgum_prod_flow.ui.viewmodels.SubmitState
+import com.example.gudgum_prod_flow.ui.theme.UtpadPrimary
+import com.example.gudgum_prod_flow.ui.theme.UtpadSuccess
+import com.example.gudgum_prod_flow.ui.theme.UtpadOutline
+import com.example.gudgum_prod_flow.ui.theme.UtpadTextPrimary
+import com.example.gudgum_prod_flow.ui.theme.UtpadTextSecondary
+import com.example.gudgum_prod_flow.ui.theme.UtpadBackground
+import com.example.gudgum_prod_flow.ui.theme.UtpadSurface
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,30 +106,27 @@ fun ProductionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Column {
-                        Text("New Production", fontWeight = FontWeight.Bold)
-                        Text(
-                            text = "Raw Material to Semifinished Goods",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Text("Production Wizard", fontWeight = FontWeight.Bold, color = UtpadTextPrimary)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
+                            tint = UtpadTextPrimary
                         )
                     }
                 },
                 actions = {
                     TextButton(onClick = onLogout) {
-                        Text("Logout")
+                        Text("Logout", color = UtpadPrimary)
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = UtpadBackground
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -134,7 +142,7 @@ fun ProductionScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -144,14 +152,23 @@ fun ProductionScreen(
                     onNavigateToRoute = onNavigateToRoute,
                 )
 
-                SectionTitle("Step $currentStep of 3")
+                WizardProgressBar(
+                    currentStep = currentStep,
+                    totalSteps = 3,
+                    stepTitle = when(currentStep) {
+                        1 -> "Flavor & Batch"
+                        2 -> "Recipe & Yield"
+                        else -> "Output & Date"
+                    }
+                )
 
                 when (currentStep) {
                     1 -> {
                         // Flavor Profile + Batch Code card
                 Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = UtpadSurface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -160,9 +177,10 @@ fun ProductionScreen(
                         // Flavor Profile dropdown
                         Column {
                             Text(
-                                text = "Flavor Profile",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "FLAVOR PROFILE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             var flavorExpanded by remember { mutableStateOf(false) }
@@ -178,9 +196,17 @@ fun ProductionScreen(
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = flavorExpanded) },
                                     modifier = Modifier
                                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                        .fillMaxWidth()
-                                        .height(56.dp),
+                                        .fillMaxWidth(),
                                     singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = UtpadPrimary,
+                                        unfocusedBorderColor = UtpadOutline,
+                                        focusedContainerColor = UtpadBackground,
+                                        unfocusedContainerColor = UtpadSurface,
+                                        focusedTextColor = UtpadTextPrimary,
+                                        unfocusedTextColor = UtpadTextPrimary
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
                                 )
                                 ExposedDropdownMenu(
                                     expanded = flavorExpanded,
@@ -207,18 +233,20 @@ fun ProductionScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "Batch Code",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = "BATCH CODE",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = UtpadTextSecondary,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    color = UtpadBackground,
                                 ) {
                                     Text(
                                         text = "Autogenerated",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        color = UtpadPrimary,
+                                        fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                     )
                                 }
@@ -228,18 +256,19 @@ fun ProductionScreen(
                                 value = batchCode,
                                 onValueChange = {},
                                 readOnly = true,
-                                placeholder = { Text("Auto-generated on flavor select") },
+                                placeholder = { Text("Auto-generated on flavor select", color = UtpadTextSecondary) },
                                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                                     fontFamily = FontFamily.Monospace,
                                     fontWeight = FontWeight.SemiBold,
                                 ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledTextColor = UtpadTextPrimary,
+                                    unfocusedBorderColor = UtpadOutline,
+                                    unfocusedContainerColor = UtpadSurface,
                                 ),
+                                shape = RoundedCornerShape(16.dp),
                             )
                         }
                     }
@@ -247,36 +276,33 @@ fun ProductionScreen(
                 } // End of step 1
                 2 -> {
                 // Recipe Ingredients section
-                Text(
-                    text = "Recipe Ingredients",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-
                 Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = UtpadSurface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 ) {
                     Column {
                         // Header row
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 16.dp, vertical = 16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
-                                text = "ITEM",
+                                text = "INGREDIENT",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Text(
                                 text = "QTY (KG)",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
-                        HorizontalDivider()
+                        HorizontalDivider(color = UtpadOutline)
 
                         // Ingredient rows
                         recipe.forEachIndexed { index, ingredient ->
@@ -289,8 +315,9 @@ fun ProductionScreen(
                             ) {
                                 Text(
                                     text = ingredient.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = UtpadTextPrimary,
                                     modifier = Modifier.weight(1f),
                                 )
                                 OutlinedTextField(
@@ -298,42 +325,47 @@ fun ProductionScreen(
                                     onValueChange = { viewModel.onRecipeQuantityChanged(index, it) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     singleLine = true,
-                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    textStyle = MaterialTheme.typography.bodyLarge.copy(
                                         textAlign = TextAlign.End,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = FontWeight.Bold,
                                     ),
-                                    modifier = Modifier
-                                        .weight(0.5f)
-                                        .height(48.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = UtpadPrimary,
+                                        unfocusedBorderColor = UtpadOutline,
+                                        focusedContainerColor = UtpadBackground,
+                                        unfocusedContainerColor = UtpadSurface,
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(0.5f),
                                 )
                             }
                             if (index < recipe.lastIndex) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = UtpadOutline)
                             }
                         }
 
                         // Expected Yield footer
-                        HorizontalDivider()
+                        HorizontalDivider(color = UtpadOutline)
                         Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            color = UtpadBackground,
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    .padding(horizontal = 16.dp, vertical = 16.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
                                     text = "Expected Yield",
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = UtpadPrimary,
                                 )
                                 Text(
                                     text = expectedYield,
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = UtpadPrimary,
                                 )
                             }
                         }
@@ -343,8 +375,9 @@ fun ProductionScreen(
                 3 -> {
                 // Manufacturing Date + Actual Output card
                 Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = UtpadSurface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -353,9 +386,10 @@ fun ProductionScreen(
                         // Manufacturing Date
                         Column {
                             Text(
-                                text = "Manufacturing Date",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "MANUFACTURING DATE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             var showDatePicker by remember { mutableStateOf(false) }
@@ -371,12 +405,12 @@ fun ProductionScreen(
                                             }
                                             showDatePicker = false
                                         }) {
-                                            Text("OK")
+                                            Text("OK", color = UtpadPrimary)
                                         }
                                     },
                                     dismissButton = {
                                         TextButton(onClick = { showDatePicker = false }) {
-                                            Text("Cancel")
+                                            Text("Cancel", color = UtpadTextSecondary)
                                         }
                                     }
                                 ) {
@@ -389,11 +423,16 @@ fun ProductionScreen(
                                     value = manufacturingDate,
                                     onValueChange = {},
                                     readOnly = true,
-                                    placeholder = { Text("Select Date") },
+                                    placeholder = { Text("Select Date", color = UtpadTextSecondary) },
                                     singleLine = true,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = UtpadPrimary,
+                                        unfocusedBorderColor = UtpadOutline,
+                                        focusedContainerColor = UtpadBackground,
+                                        unfocusedContainerColor = UtpadSurface,
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
                                 )
                                 // Invisible surface to capture clicks
                                 Surface(
@@ -407,27 +446,33 @@ fun ProductionScreen(
                         // Actual Production Output
                         Column {
                             Text(
-                                text = "Actual Production Output (Kg)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "ACTUAL OUTPUT (KG)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = UtpadTextSecondary,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = actualOutput,
                                 onValueChange = { viewModel.onActualOutputChanged(it) },
-                                placeholder = { Text("0.00") },
+                                placeholder = { Text("0.00", color = UtpadTextSecondary) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                suffix = { Text("Kg") },
+                                suffix = { Text("Kg", color = UtpadTextSecondary) },
                                 singleLine = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = UtpadPrimary,
+                                    unfocusedBorderColor = UtpadOutline,
+                                    focusedContainerColor = UtpadBackground,
+                                    unfocusedContainerColor = UtpadSurface,
+                                ),
+                                shape = RoundedCornerShape(16.dp),
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "System allows +/-5% tolerance from expected yield.",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = UtpadTextSecondary,
                             )
                         }
                     }
@@ -443,13 +488,14 @@ fun ProductionScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 20.dp,
+                color = UtpadSurface,
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         androidx.compose.material3.OutlinedButton(
                             onClick = { 
@@ -461,13 +507,16 @@ fun ProductionScreen(
                             },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(54.dp),
-                            shape = RoundedCornerShape(14.dp),
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = UtpadTextPrimary
+                            )
                         ) {
                             if (currentStep > 1) {
-                                Text("Back")
+                                Text("Back", fontWeight = FontWeight.Bold)
                             } else {
-                                Text("Reset")
+                                Text("Reset", fontWeight = FontWeight.Bold)
                             }
                         }
                         
@@ -481,23 +530,28 @@ fun ProductionScreen(
                             },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(54.dp),
-                            shape = RoundedCornerShape(14.dp),
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = UtpadPrimary,
+                                contentColor = androidx.compose.ui.graphics.Color.White
+                            ),
                             enabled = submitState !is SubmitState.Loading,
                         ) {
                             if (currentStep < 3) {
-                                Text("Next")
+                                Text("Continue", fontWeight = FontWeight.Bold)
                             } else {
-                                Text("Confirm & Save")
+                                Text("Confirm & Save", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                     if (AppRoute.Packing in allowedRoutes) {
+                        Spacer(modifier = Modifier.height(16.dp))
                         TextButton(
                             onClick = { onNavigateToRoute(AppRoute.Packing) },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Continue to Packing")
+                            Text("Continue to Packing", color = UtpadPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -511,7 +565,66 @@ private fun SectionTitle(title: String) {
     Text(
         text = title.uppercase(),
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = UtpadTextSecondary,
         fontWeight = FontWeight.SemiBold,
     )
+}
+
+@Composable
+private fun WizardProgressBar(
+    currentStep: Int,
+    totalSteps: Int,
+    stepTitle: String,
+    modifier: Modifier = Modifier
+) {
+    val progress = currentStep.toFloat() / totalSteps.toFloat()
+    val percentage = (progress * 100).toInt()
+    
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "STEP $currentStep OF $totalSteps",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = UtpadPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stepTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = UtpadTextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text(
+                text = "$percentage%",
+                style = MaterialTheme.typography.labelMedium,
+                color = UtpadTextSecondary,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        
+        // Progress Bar Line
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .background(UtpadOutline, RoundedCornerShape(3.dp))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = progress)
+                    .height(6.dp)
+                    .background(UtpadPrimary, RoundedCornerShape(3.dp))
+            )
+        }
+    }
 }

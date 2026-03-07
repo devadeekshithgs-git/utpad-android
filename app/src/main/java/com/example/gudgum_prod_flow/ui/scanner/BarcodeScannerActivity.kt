@@ -27,8 +27,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,6 +38,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Add
@@ -57,6 +60,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -70,8 +79,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -142,12 +156,24 @@ private fun BarcodeScannerRoute(
 
     var scanEnabled by remember { mutableStateOf(true) }
     var scannedBarcode by remember { mutableStateOf<String?>(null) }
+    var torchEnabled by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         hasCameraPermission = granted
     }
+
+    val infiniteTransition = rememberInfiniteTransition()
+    val scanLineOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scanLineAnimation"
+    )
 
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
@@ -162,6 +188,7 @@ private fun BarcodeScannerRoute(
             MlKitBarcodeScannerPreview(
                 modifier = Modifier.fillMaxSize(),
                 scanEnabled = scanEnabled && scannedBarcode == null,
+                torchEnabled = torchEnabled,
                 onBarcodeDetected = { value ->
                     if (scannedBarcode == null) {
                         scannedBarcode = value
@@ -170,7 +197,168 @@ private fun BarcodeScannerRoute(
                     }
                 },
             )
-            // Removed ScannerFrameOverlay (green overlay)
+            
+            // PIXEL PERFECT SCANNER OVERLAY
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            ) {
+                // 1. Draw dark translucent background
+                drawRect(color = Color(0xCC000000)) // 80% Black
+
+                // 2. Define Cutout Area
+                // Based on screenshot, cutout is square-ish, horizontally centered, vertically somewhat in upper-middle.
+                val cutoutWidth = size.width * 0.75f
+                val cutoutHeight = cutoutWidth * 0.8f 
+                val cutoutLeft = (size.width - cutoutWidth) / 2
+                val cutoutTop = size.height * 0.25f
+                
+                // 3. Draw Cutout (Clear)
+                drawRoundRect(
+                    color = Color.Transparent,
+                    topLeft = Offset(cutoutLeft, cutoutTop),
+                    size = Size(cutoutWidth, cutoutHeight),
+                    cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx()),
+                    blendMode = BlendMode.Clear
+                )
+
+                // 4. Draw Blue Brackets
+                val blueTone = Color(0xFF2563EB) // UtpadPrimary
+                val strokeWidth = 2.dp.toPx()
+                val bracketLen = 32.dp.toPx()
+                val cornerRad = 16.dp.toPx()
+                
+                // We'll draw 4 corner brackets. 
+                // Top-Left
+                drawLine(blueTone, Offset(cutoutLeft, cutoutTop + cornerRad), Offset(cutoutLeft, cutoutTop + bracketLen), strokeWidth)
+                drawLine(blueTone, Offset(cutoutLeft + cornerRad, cutoutTop), Offset(cutoutLeft + bracketLen, cutoutTop), strokeWidth)
+                // Bottom-Left
+                drawLine(blueTone, Offset(cutoutLeft, cutoutTop + cutoutHeight - cornerRad), Offset(cutoutLeft, cutoutTop + cutoutHeight - bracketLen), strokeWidth)
+                drawLine(blueTone, Offset(cutoutLeft + cornerRad, cutoutTop + cutoutHeight), Offset(cutoutLeft + bracketLen, cutoutTop + cutoutHeight), strokeWidth)
+                // Top-Right
+                drawLine(blueTone, Offset(cutoutLeft + cutoutWidth, cutoutTop + cornerRad), Offset(cutoutLeft + cutoutWidth, cutoutTop + bracketLen), strokeWidth)
+                drawLine(blueTone, Offset(cutoutLeft + cutoutWidth - cornerRad, cutoutTop), Offset(cutoutLeft + cutoutWidth - bracketLen, cutoutTop), strokeWidth)
+                // Bottom-Right
+                drawLine(blueTone, Offset(cutoutLeft + cutoutWidth, cutoutTop + cutoutHeight - cornerRad), Offset(cutoutLeft + cutoutWidth, cutoutTop + cutoutHeight - bracketLen), strokeWidth)
+                drawLine(blueTone, Offset(cutoutLeft + cutoutWidth - cornerRad, cutoutTop + cutoutHeight), Offset(cutoutLeft + cutoutWidth - bracketLen, cutoutTop + cutoutHeight), strokeWidth)
+                
+                // Rounded corner arcs for brackets
+                drawArc(
+                    color = blueTone,
+                    startAngle = 180f, sweepAngle = 90f, useCenter = false,
+                    topLeft = Offset(cutoutLeft, cutoutTop), 
+                    size = Size(cornerRad*2, cornerRad*2), 
+                    style = Stroke(strokeWidth)
+                )
+                drawArc(
+                    color = blueTone,
+                    startAngle = 270f, sweepAngle = 90f, useCenter = false,
+                    topLeft = Offset(cutoutLeft + cutoutWidth - cornerRad*2, cutoutTop), 
+                    size = Size(cornerRad*2, cornerRad*2), 
+                    style = Stroke(strokeWidth)
+                )
+                drawArc(
+                    color = blueTone,
+                    startAngle = 90f, sweepAngle = 90f, useCenter = false,
+                    topLeft = Offset(cutoutLeft, cutoutTop + cutoutHeight - cornerRad*2), 
+                    size = Size(cornerRad*2, cornerRad*2), 
+                    style = Stroke(strokeWidth)
+                )
+                drawArc(
+                    color = blueTone,
+                    startAngle = 0f, sweepAngle = 90f, useCenter = false,
+                    topLeft = Offset(cutoutLeft + cutoutWidth - cornerRad*2, cutoutTop + cutoutHeight - cornerRad*2), 
+                    size = Size(cornerRad*2, cornerRad*2), 
+                    style = Stroke(strokeWidth)
+                )
+                
+                // 5. Draw Horizontal Scan Line
+                val linePadding = 16.dp.toPx()
+                val lineY = cutoutTop + (cutoutHeight * scanLineOffset)
+                drawLine(
+                    color = blueTone.copy(alpha = 0.8f),
+                    start = Offset(cutoutLeft + linePadding, lineY),
+                    end = Offset(cutoutLeft + cutoutWidth - linePadding, lineY),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+            
+            // Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "UTPAD",
+                    color = Color.White.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        letterSpacing = 4.sp, 
+                        fontWeight = FontWeight.Bold
+                    ),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // Bottom Controls
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 60.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Back Button centered directly above align barcode text
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(Color(0x33FFFFFF), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "ALIGN BARCODE",
+                    color = Color.White.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        letterSpacing = 2.sp, 
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .background(Color(0xFFE85D04), CircleShape) // Warning orange dot
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                IconButton(
+                    onClick = { torchEnabled = !torchEnabled },
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(Color(0x33FFFFFF), CircleShape) // Semi-transparent white
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FlashOn,
+                        contentDescription = "Flashlight",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+            
         } else {
             Box(
                 modifier = Modifier
@@ -183,84 +371,6 @@ private fun BarcodeScannerRoute(
                         .padding(horizontal = 22.dp),
                     onGrantPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     onClose = onClose,
-                )
-            }
-        }
-
-        ScannerTopControls(
-            label = prompt,
-            scanEnabled = scanEnabled,
-            onScanEnabledChange = { enabled ->
-                scanEnabled = enabled
-                if (enabled) {
-                    scannedBarcode = null
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(top = 18.dp, start = 16.dp, end = 16.dp),
-        )
-
-        // Center bottom back button
-        Button(
-            onClick = onClose,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E6BFF)),
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 60.dp)
-                .heightIn(min = 48.dp)
-        ) {
-            Text(
-                text = "Back",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ScannerTopControls(
-    label: String,
-    scanEnabled: Boolean,
-    onScanEnabledChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier) {
-        // Removed volume button
-
-        Surface(
-            modifier = Modifier.align(Alignment.Center),
-            shape = RoundedCornerShape(18.dp),
-            color = Color(0x991F1F1F),
-        ) {
-            Row(
-                modifier = Modifier
-                    .widthIn(min = 190.dp)
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    text = label,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 22.sp,
-                )
-                Switch(
-                    checked = scanEnabled,
-                    onCheckedChange = onScanEnabledChange,
-                    modifier = Modifier.scale(0.82f),
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color(0xFF5E567C),
-                        checkedTrackColor = Color(0xFFE8E7F2),
-                        uncheckedThumbColor = Color(0xFF5E567C),
-                        uncheckedTrackColor = Color(0xFFDCD9E8),
-                    ),
                 )
             }
         }
@@ -303,10 +413,13 @@ private fun CameraPermissionRequired(
 private fun MlKitBarcodeScannerPreview(
     modifier: Modifier = Modifier,
     scanEnabled: Boolean,
+    torchEnabled: Boolean = false,
     onBarcodeDetected: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    var cameraControl by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
 
     val previewView = remember {
         PreviewView(context).apply {
@@ -318,6 +431,14 @@ private fun MlKitBarcodeScannerPreview(
 
     LaunchedEffect(scanEnabled) {
         detectionEnabled.set(scanEnabled)
+    }
+
+    LaunchedEffect(torchEnabled) {
+        cameraControl?.let {
+            if (it.enableTorch(torchEnabled) == null) {
+                // Ignore failure if unsupported
+            }
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -363,22 +484,17 @@ private fun MlKitBarcodeScannerPreview(
                     preview,
                     analysisUseCase,
                 )
-
-                val maxZoomRatio = camera.cameraInfo.zoomState.value?.maxZoomRatio ?: 1f
+                
+                cameraControl = camera.cameraControl
+                
+                // Enable Torch
+                if (camera.cameraInfo.hasFlashUnit()) {
+                    camera.cameraControl.enableTorch(torchEnabled)
+                }
 
                 val optionsBuilder = BarcodeScannerOptions.Builder()
                     .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
                     .enableAllPotentialBarcodes()
-
-                if (maxZoomRatio > 1f) {
-                    val zoomOptions = ZoomSuggestionOptions.Builder { zoomRatio ->
-                        camera.cameraControl.setZoomRatio(zoomRatio)
-                        true
-                    }
-                        .setMaxSupportedZoomRatio(maxZoomRatio)
-                        .build()
-                    optionsBuilder.setZoomSuggestionOptions(zoomOptions)
-                }
 
                 scanner = BarcodeScanning.getClient(optionsBuilder.build())
 
