@@ -201,20 +201,15 @@ fun PhoneInputStep(
 
         androidx.compose.material3.OutlinedTextField(
             value = phone,
-            onValueChange = { newValue ->
-                val digitsOnly = newValue.filter { it.isDigit() }
-                if (digitsOnly.length <= 10) {
-                    onPhoneChanged(digitsOnly)
-                }
-            },
+            onValueChange = onPhoneChanged,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword,
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone,
                 imeAction = androidx.compose.ui.text.input.ImeAction.Done
             ),
             keyboardActions = androidx.compose.foundation.text.KeyboardActions(
                 onDone = {
-                    if (phone.length == 10) onNextStep()
+                    if (phone.isNotBlank()) onNextStep()
                 }
             ),
             singleLine = true,
@@ -249,11 +244,11 @@ fun PhoneInputStep(
 
         Button(
             onClick = onNextStep,
-            enabled = phone.length == 10,
+            enabled = phone.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .shadow(if (phone.length == 10) 8.dp else 0.dp, RoundedCornerShape(16.dp), spotColor = UtpadPrimary.copy(alpha = 0.5f)),
+                .shadow(if (phone.isNotBlank()) 8.dp else 0.dp, RoundedCornerShape(16.dp), spotColor = UtpadPrimary.copy(alpha = 0.5f)),
             colors = ButtonDefaults.buttonColors(containerColor = UtpadPrimary),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -294,7 +289,7 @@ fun PinInputStep(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Enter your 6-digit\nPIN",
+            text = "Enter your\nPIN",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = UtpadTextPrimary,
@@ -347,11 +342,11 @@ fun PinInputStep(
 
         Button(
             onClick = onSubmit,
-            enabled = pin.length == 6 && !isLoading,
+            enabled = pin.isNotBlank() && !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .shadow(if (pin.length == 6 && !isLoading) 8.dp else 0.dp, RoundedCornerShape(16.dp), spotColor = UtpadPrimary.copy(alpha = 0.5f)),
+                .shadow(if (pin.isNotBlank() && !isLoading) 8.dp else 0.dp, RoundedCornerShape(16.dp), spotColor = UtpadPrimary.copy(alpha = 0.5f)),
             colors = ButtonDefaults.buttonColors(containerColor = UtpadPrimary),
             shape = RoundedCornerShape(16.dp)
         ) {

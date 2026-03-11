@@ -6,5 +6,6 @@ data class User(
     val phone: String,
     val name: String,
     val role: String,
-    val factoryIds: List<String>
+    val factoryIds: List<String>,
+    val allowedModules: List<String> = emptyList(),
 )

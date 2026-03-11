@@ -27,6 +27,8 @@ class AuthRepository @Inject constructor(
     private val tokenManager: TokenManager,
     private val connectivityObserver: ConnectivityObserver
 ) {
+    private val mobileModules = setOf("inwarding", "production", "packing", "dispatch")
+
     val isLoggedIn: Flow<Boolean> = tokenManager.isLoggedIn
 
     suspend fun login(phone: String, pin: String): AuthResult {
@@ -86,7 +88,8 @@ class AuthRepository @Inject constructor(
                         phone = user.phone,
                         name = user.name,
                         role = user.role,
-                        factoryIds = user.factoryIds
+                        factoryIds = user.factoryIds,
+                        allowedModules = extractAllowedModulesFromPermissions(user.permissions),
                     ),
                     offlineMode = false
                 )
@@ -146,6 +149,12 @@ class AuthRepository @Inject constructor(
             emptyList()
         }
 
+        val allowedModules = database.permissionDao()
+            .getPermissions(userEntity.userId)
+            .map { it.module.trim().lowercase() }
+            .filter { mobileModules.contains(it) }
+            .distinct()
+
         return AuthResult.Success(
             user = User(
                 userId = userEntity.userId,
@@ -153,7 +162,8 @@ class AuthRepository @Inject constructor(
                 phone = userEntity.phone,
                 name = userEntity.name,
                 role = userEntity.role,
-                factoryIds = factoryIds
+                factoryIds = factoryIds,
+                allowedModules = allowedModules,
             ),
             offlineMode = true
         )
@@ -185,5 +195,14 @@ class AuthRepository @Inject constructor(
             // Best-effort server logout
         }
         tokenManager.clearTokens()
+    }
+
+    private fun extractAllowedModulesFromPermissions(
+        permissions: List<com.example.gudgum_prod_flow.data.remote.dto.PermissionDto>,
+    ): List<String> {
+        return permissions
+            .map { it.module.trim().lowercase() }
+            .filter { mobileModules.contains(it) }
+            .distinct()
     }
 }

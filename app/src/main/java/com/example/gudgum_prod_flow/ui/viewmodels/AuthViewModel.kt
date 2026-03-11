@@ -58,9 +58,7 @@ class AuthViewModel @Inject constructor(
     val workerSession: StateFlow<WorkerSession?> = _workerSession.asStateFlow()
 
     fun onPhoneChanged(value: String) {
-        if (value.all { it.isDigit() } && value.length <= 10) {
-            _phone.value = value
-        }
+        _phone.value = value.trim()
     }
 
     fun onPinDigit(digit: Int) {
@@ -109,12 +107,12 @@ class AuthViewModel @Inject constructor(
             when (val result = loginUseCase(_phone.value, _pin.value)) {
                 is com.example.gudgum_prod_flow.domain.model.AuthResult.Success -> {
                     val user = result.user
-                    val allowedRoutes = routesForRole(user.role)
+                    val allowedRoutes = routesForAssignment(user.allowedModules, user.role)
                     val homeRoute = allowedRoutes.firstOrNull()
 
                     if (homeRoute == null) {
                         _loginState.value = LoginState.Error(
-                            "This user role is not assigned to a mobile module.",
+                            "This user is not assigned to any mobile module.",
                         )
                         _pin.value = ""
                         return@launch
@@ -153,13 +151,42 @@ class AuthViewModel @Inject constructor(
         _pin.value = ""
     }
 
-    private fun routesForRole(role: String): Set<String> {
-        return when (role.trim().lowercase()) {
-            "inwarding" -> setOf(AppRoute.Inwarding)
-            "production" -> setOf(AppRoute.Production)
-            "packing" -> setOf(AppRoute.Packing)
-            "dispatch" -> setOf(AppRoute.Dispatch)
+    private fun routesForAssignment(allowedModules: List<String>, role: String): Set<String> {
+        val fromModules = allowedModules
+            .map { it.trim().lowercase() }
+            .mapNotNull { moduleToRoute(it) }
+            .toCollection(linkedSetOf())
+
+        if (fromModules.isNotEmpty()) {
+            return fromModules
+        }
+
+        return roleToRoutes(role)
+    }
+
+    private fun roleToRoutes(role: String): Set<String> {
+        return when (role.trim().lowercase().replace('-', '_').replace(' ', '_')) {
+            "inwarding", "inwarding_staff" -> linkedSetOf(AppRoute.Inwarding)
+            "production", "production_operator" -> linkedSetOf(AppRoute.Production)
+            "packing", "packing_staff" -> linkedSetOf(AppRoute.Packing)
+            "dispatch", "dispatch_staff" -> linkedSetOf(AppRoute.Dispatch)
+            "factory_supervisor", "tenant_admin", "platform_admin" -> linkedSetOf(
+                AppRoute.Inwarding,
+                AppRoute.Production,
+                AppRoute.Packing,
+                AppRoute.Dispatch,
+            )
             else -> emptySet()
+        }
+    }
+
+    private fun moduleToRoute(module: String): String? {
+        return when (module) {
+            "inwarding" -> AppRoute.Inwarding
+            "production" -> AppRoute.Production
+            "packing" -> AppRoute.Packing
+            "dispatch" -> AppRoute.Dispatch
+            else -> null
         }
     }
 }

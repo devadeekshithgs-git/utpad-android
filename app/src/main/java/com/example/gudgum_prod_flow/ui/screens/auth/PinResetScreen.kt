@@ -219,7 +219,7 @@ fun PinResetScreen(
                     Spacer(Modifier.height(12.dp))
 
                     Text(
-                        "PIN cannot be sequential (e.g. 123456) or repeated (e.g. 111111)",
+                        "Use a PIN that the worker can remember.",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
