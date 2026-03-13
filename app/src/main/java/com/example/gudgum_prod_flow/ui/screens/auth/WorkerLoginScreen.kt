@@ -1,6 +1,5 @@
 package com.example.gudgum_prod_flow.ui.screens.auth
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -30,7 +29,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Lock
@@ -52,10 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,8 +77,6 @@ import com.example.gudgum_prod_flow.ui.theme.UtpadTextPrimary
 import com.example.gudgum_prod_flow.ui.viewmodels.AuthViewModel
 import com.example.gudgum_prod_flow.ui.viewmodels.LoginState
 
-private enum class LoginStep { PHONE, PIN }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkerLoginScreen(
@@ -92,16 +85,8 @@ fun WorkerLoginScreen(
     authViewModel: AuthViewModel = viewModel(),
 ) {
     val phone by authViewModel.phone.collectAsState()
-    val pin by authViewModel.pin.collectAsState()
     val loginState by authViewModel.loginState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var step by remember { mutableStateOf(LoginStep.PHONE) }
-
-    BackHandler(enabled = step == LoginStep.PIN) {
-        step = LoginStep.PHONE
-        authViewModel.clearPin()
-        authViewModel.resetLoginState()
-    }
 
     LaunchedEffect(loginState) {
         when (val state = loginState) {
@@ -125,47 +110,22 @@ fun WorkerLoginScreen(
                         modifier = Modifier.height(48.dp)
                     )
                 },
-                navigationIcon = {
-                    if (step == LoginStep.PIN) {
-                        IconButton(onClick = {
-                            step = LoginStep.PHONE
-                            authViewModel.clearPin()
-                            authViewModel.resetLoginState()
-                        }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    } else {
-                        Box(Modifier.size(48.dp))
-                    }
-                },
+                navigationIcon = { Box(Modifier.size(48.dp)) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.Transparent
                 )
             )
         }
     ) { padding ->
-        when (step) {
-            LoginStep.PHONE -> PhoneInputStep(
-                modifier = Modifier.padding(padding),
-                phone = phone,
-                onPhoneChanged = authViewModel::onPhoneChanged,
-                onSubmit = { if (phone.length >= 10) step = LoginStep.PIN },
-                isLoading = loginState is LoginState.Loading,
-                isError = false,
-                errorMessage = null,
-            )
-            LoginStep.PIN -> PinInputStep(
-                modifier = Modifier.padding(padding),
-                phone = phone,
-                pin = pin,
-                onPinChanged = authViewModel::onPinChanged,
-                onSubmit = authViewModel::submitLogin,
-                isLoading = loginState is LoginState.Loading,
-                isError = loginState is LoginState.Error,
-                isSuccess = loginState is LoginState.Success,
-                errorMessage = (loginState as? LoginState.Error)?.message,
-            )
-        }
+        PhoneInputStep(
+            modifier = Modifier.padding(padding),
+            phone = phone,
+            onPhoneChanged = authViewModel::onPhoneChanged,
+            onSubmit = { if (phone.length >= 10) authViewModel.submitLogin() },
+            isLoading = loginState is LoginState.Loading,
+            isError = loginState is LoginState.Error,
+            errorMessage = (loginState as? LoginState.Error)?.message,
+        )
     }
 }
 
@@ -275,7 +235,7 @@ fun PhoneInputStep(
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
             } else {
-                Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Login", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
 
