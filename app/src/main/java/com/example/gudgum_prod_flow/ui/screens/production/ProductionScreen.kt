@@ -184,8 +184,9 @@ fun ProductionScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+                            val flavorsList by viewModel.flavors.collectAsState()
                             SearchableDropdown(
-                                items = viewModel.flavorProfiles,
+                                items = flavorsList,
                                 selectedItem = selectedFlavor,
                                 onItemSelected = { viewModel.onFlavorSelected(it) },
                                 itemLabel = { it.name },

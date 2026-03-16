@@ -62,7 +62,8 @@ class ProductionRepository @Inject constructor(
     }
 
     // Refreshes recipe lines for a specific flavor from gg_recipes table
-    suspend fun refreshRecipeLines(flavorId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    // Returns the batch_size_kg from the recipe for expected yield display
+    suspend fun refreshRecipeLines(flavorId: String): Result<Double?> = withContext(Dispatchers.IO) {
         runCatching {
             val response = api.getGgRecipe(flavorId = "eq.$flavorId")
             if (response.isSuccessful) {
@@ -82,6 +83,8 @@ class ProductionRepository @Inject constructor(
                         )
                     })
                 }
+                
+                targetRecipe?.batchSizeKg
             } else {
                 error("Recipe line refresh failed: ${response.code()}")
             }

@@ -136,7 +136,12 @@ class ProductionViewModel @Inject constructor(
         // Load recipe lines using flavorId (gg_recipes uses flavor_id, not recipe_id)
         val recipeKey = flavor.recipeId ?: flavor.id
         viewModelScope.launch {
-            if (isOnline) repository.refreshRecipeLines(recipeKey)
+            if (isOnline) {
+                val yieldResult = repository.refreshRecipeLines(recipeKey)
+                yieldResult.onSuccess { batchSizeKg ->
+                    _plannedYield.value = batchSizeKg
+                }
+            }
             repository.getRecipeLines(recipeKey).collect { lines ->
                 _recipe.value = lines.map {
                     RecipeIngredient(

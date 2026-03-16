@@ -69,18 +69,19 @@ class InwardingRepository @Inject constructor(
                         workerId = request.recordedBy,
                         workerName = WorkerIdentityStore.workerName,
                         workerRole = WorkerIdentityStore.workerRole,
-                        batchCode = request.lotRef ?: "N/A",
-                        quantity = request.qty,
+                        batchCode = "N/A",
+                        quantity = request.quantity,
                         unit = request.unit,
                         summary = "Inward event queued for ingredient ${request.ingredientId}",
                         payloadJson = JSONObject().apply {
                             put("ingredient_id", request.ingredientId)
-                            put("qty", request.qty)
+                            put("quantity", request.quantity)
                             put("unit", request.unit)
-                            put("inward_date", request.inwardDate)
+                            put("received_date", request.receivedDate)
                             put("expiry_date", request.expiryDate ?: JSONObject.NULL)
-                            put("lot_ref", request.lotRef ?: JSONObject.NULL)
-                            put("vendor_id", request.vendorId ?: JSONObject.NULL)
+                            put("vendor_id", request.vendorId)
+                            put("bill_number", request.billNumber ?: JSONObject.NULL)
+                            put("bill_photo_url", request.billPhotoUrl ?: JSONObject.NULL)
                         }.toString(),
                     )
                 )

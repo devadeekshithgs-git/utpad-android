@@ -181,7 +181,7 @@ interface SupabaseApiService {
     @GET("rest/v1/gg_recipes")
     suspend fun getGgRecipe(
         @Query("flavor_id") flavorId: String, // "eq.{uuid}"
-        @Query("select") select: String = "id,flavor_id,ingredients",
+        @Query("select") select: String = "id,flavor_id,batch_size_kg,ingredients",
     ): Response<List<GgRecipeDto>>
 
     @GET("rest/v1/gg_ingredients")

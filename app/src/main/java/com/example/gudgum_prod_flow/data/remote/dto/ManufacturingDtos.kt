@@ -277,6 +277,7 @@ data class GgRecipeIngredientDto(
 data class GgRecipeDto(
     val id: String,
     @SerialName("flavor_id") val flavorId: String,
+    @SerialName("batch_size_kg") val batchSizeKg: Double? = null,
     val ingredients: List<GgRecipeIngredientDto> = emptyList(),
 )
 
@@ -309,12 +310,13 @@ data class GgProductionRecordRequest(
 @Serializable
 data class GgInwardingRequest(
     @SerialName("ingredient_id") val ingredientId: String,
-    val qty: Double,
+    val quantity: Double,
     val unit: String,
-    @SerialName("vendor_id") val vendorId: String? = null,
-    @SerialName("inward_date") val inwardDate: String,
+    @SerialName("vendor_id") val vendorId: String,
+    @SerialName("received_date") val receivedDate: String,
     @SerialName("expiry_date") val expiryDate: String? = null,
-    @SerialName("lot_ref") val lotRef: String? = null,
+    @SerialName("bill_number") val billNumber: String? = null,
+    @SerialName("bill_photo_url") val billPhotoUrl: String? = null,
     @SerialName("recorded_by") val recordedBy: String,
 )
 

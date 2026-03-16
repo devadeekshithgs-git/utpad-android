@@ -252,15 +252,21 @@ class InwardingViewModel @Inject constructor(
 
         viewModelScope.launch {
             _submitState.value = SubmitState.Loading
+            val vendor = _selectedVendor.value
+            if (vendor == null) {
+                _submitState.value = SubmitState.Error("Select a vendor")
+                return@launch
+            }
             val result = repository.submitInwardEvent(
                 request = GgInwardingRequest(
                     ingredientId = ingredient.id,
-                    qty = qty,
+                    quantity = qty,
                     unit = _selectedUnit.value,
-                    vendorId = _selectedVendor.value?.id,
-                    inwardDate = _inwardDate.value,
+                    vendorId = vendor.id,
+                    receivedDate = _inwardDate.value,
                     expiryDate = _expiryDate.value.ifBlank { null },
-                    lotRef = null,
+                    billNumber = _billNumber.value.ifBlank { null },
+                    billPhotoUrl = _billPhotoUri.value,
                     recordedBy = WorkerIdentityStore.workerId,
                 ),
                 isOnline = isOnline,
