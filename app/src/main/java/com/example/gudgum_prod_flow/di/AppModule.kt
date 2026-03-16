@@ -41,4 +41,15 @@ object AppModule {
             .fallbackToDestructiveMigration()
             .build()
     }
+
+    @Provides
+    @Singleton
+    fun provideSupabaseClient(): io.github.jan.supabase.SupabaseClient {
+        return io.github.jan.supabase.createSupabaseClient(
+            supabaseUrl = com.example.gudgum_prod_flow.BuildConfig.SUPABASE_URL,
+            supabaseKey = com.example.gudgum_prod_flow.BuildConfig.SUPABASE_ANON_KEY
+        ) {
+            install(io.github.jan.supabase.realtime.Realtime)
+        }
+    }
 }

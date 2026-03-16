@@ -175,32 +175,16 @@ fun PinResetScreen(
 
                     Spacer(Modifier.height(24.dp))
 
-                    Text(
-                        "Enter a 6-digit PIN:",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // New PIN entry
-                    PinDotsRow(
-                        enteredCount = newPin.length,
-                        totalCount = 6,
-                        isError = false,
-                        isSuccess = false
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    NumericKeypad(
-                        onDigit = { digit ->
-                            if (newPin.length < 6) newPin += digit.toString()
+                    OutlinedTextField(
+                        value = newPin,
+                        onValueChange = {
+                            if (it.length <= 6 && it.all { c -> c.isDigit() }) newPin = it
                         },
-                        onBackspace = {
-                            if (newPin.isNotEmpty()) newPin = newPin.dropLast(1)
-                        },
-                        bottomLeftIcon = { Spacer(Modifier.size(24.dp)) },
-                        enabled = true
+                        label = { Text("Enter 6-digit PIN") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
                     )
 
                     Spacer(Modifier.height(24.dp))

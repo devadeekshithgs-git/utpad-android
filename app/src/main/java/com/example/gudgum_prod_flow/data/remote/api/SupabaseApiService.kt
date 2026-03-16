@@ -179,22 +179,20 @@ interface SupabaseApiService {
     ): Response<List<GgFlavorDto>>
 
     @GET("rest/v1/gg_recipes")
-    suspend fun getGgRecipeLines(
+    suspend fun getGgRecipe(
         @Query("flavor_id") flavorId: String, // "eq.{uuid}"
-        @Query("select") select: String = "id,flavor_id,ingredient_id,qty_kg,ingredient:gg_ingredients(id,name,unit,active)",
-    ): Response<List<GgRecipeLineDto>>
+        @Query("select") select: String = "id,flavor_id,ingredients",
+    ): Response<List<GgRecipeDto>>
 
     @GET("rest/v1/gg_ingredients")
     suspend fun getGgIngredients(
-        @Query("active") active: String = "eq.true",
-        @Query("select") select: String = "id,name,unit,active,default_vendor_id",
+        @Query("select") select: String = "id,name,default_unit",
         @Query("order") order: String = "name.asc",
     ): Response<List<GgIngredientDto>>
 
     @GET("rest/v1/gg_vendors")
     suspend fun getGgVendors(
-        @Query("active") active: String = "eq.true",
-        @Query("select") select: String = "id,name,contact_phone,active",
+        @Query("select") select: String = "id,name,phone",
         @Query("order") order: String = "name.asc",
     ): Response<List<GgVendorDto>>
 

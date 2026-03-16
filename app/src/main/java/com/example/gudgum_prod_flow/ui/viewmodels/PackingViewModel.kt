@@ -35,8 +35,7 @@ class PackingViewModel @Inject constructor(
     )
     val packingDate: StateFlow<String> = _packingDate.asStateFlow()
 
-    private val _notes = MutableStateFlow("")
-    val notes: StateFlow<String> = _notes.asStateFlow()
+
 
     private val _shiftSummary = MutableStateFlow(ShiftSummary("Morning", "0", "0"))
     val shiftSummary: StateFlow<ShiftSummary> = _shiftSummary.asStateFlow()
@@ -55,7 +54,7 @@ class PackingViewModel @Inject constructor(
     fun onQtyPackedChanged(value: String) { _qtyPacked.value = value }
     fun onBoxesMadeChanged(value: String) { _boxesMade.value = value }
     fun onPackingDateChanged(value: String) { _packingDate.value = value }
-    fun onNotesChanged(value: String) { _notes.value = value }
+
 
     fun nextStep() { if (_currentWizardStep.value < 3) _currentWizardStep.value++ }
     fun previousStep() { if (_currentWizardStep.value > 1) _currentWizardStep.value-- }
@@ -107,7 +106,7 @@ class PackingViewModel @Inject constructor(
         _qtyPacked.value = ""
         _boxesMade.value = ""
         _packingDate.value = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        _notes.value = ""
+
         _submitState.value = SubmitState.Idle
         _currentWizardStep.value = 1
     }

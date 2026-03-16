@@ -80,7 +80,7 @@ fun PackingScreen(
     val qtyPacked by viewModel.qtyPacked.collectAsState()
     val boxesMade by viewModel.boxesMade.collectAsState()
     val packingDate by viewModel.packingDate.collectAsState()
-    val notes by viewModel.notes.collectAsState()
+
     val shiftSummary by viewModel.shiftSummary.collectAsState()
     val submitState by viewModel.submitState.collectAsState()
     val currentStep by viewModel.currentWizardStep.collectAsState()
@@ -333,42 +333,8 @@ fun PackingScreen(
                         }
                     }
 
-                    // ── Step 3: Notes & Summary Review ──
+                    // ── Step 3: Summary Review ──
                     3 -> {
-                        Card(
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = UtpadSurface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(14.dp),
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "NOTES (OPTIONAL)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = UtpadTextSecondary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = notes,
-                                        onValueChange = viewModel::onNotesChanged,
-                                        placeholder = { Text("Any issues during packing?", color = UtpadTextSecondary) },
-                                        maxLines = 3,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = UtpadPrimary,
-                                            unfocusedBorderColor = UtpadOutline,
-                                            focusedContainerColor = UtpadBackground,
-                                            unfocusedContainerColor = UtpadSurface,
-                                        ),
-                                        shape = RoundedCornerShape(16.dp),
-                                    )
-                                }
-                            }
-                        }
 
                         Card(
                             shape = RoundedCornerShape(24.dp),

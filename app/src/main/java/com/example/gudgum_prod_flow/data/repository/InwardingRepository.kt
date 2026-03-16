@@ -5,13 +5,11 @@ import com.example.gudgum_prod_flow.data.local.dao.PendingOperationEventDao
 import com.example.gudgum_prod_flow.data.local.entity.CachedIngredientEntity
 import com.example.gudgum_prod_flow.data.local.entity.PendingOperationEventEntity
 import com.example.gudgum_prod_flow.data.remote.api.SupabaseApiClient
-import com.example.gudgum_prod_flow.data.remote.dto.CreateIngredientRequest
-import com.example.gudgum_prod_flow.data.remote.dto.CreateIngredientSupplierLinkRequest
-import com.example.gudgum_prod_flow.data.remote.dto.CreateSupplierRequest
-import com.example.gudgum_prod_flow.data.remote.dto.IngredientDto
-import com.example.gudgum_prod_flow.data.remote.dto.SubmitInwardEventRequest
+import com.example.gudgum_prod_flow.data.remote.dto.GgInwardingRequest
+import com.example.gudgum_prod_flow.data.remote.dto.GgIngredientInsertRequest
+import com.example.gudgum_prod_flow.data.remote.dto.GgVendorDto
+import com.example.gudgum_prod_flow.data.remote.dto.GgVendorInsertRequest
 import com.example.gudgum_prod_flow.data.remote.dto.SubmitReturnEventRequest
-import com.example.gudgum_prod_flow.data.remote.dto.SupplierDto
 import com.example.gudgum_prod_flow.data.session.WorkerIdentityStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +30,7 @@ class InwardingRepository @Inject constructor(
 
     suspend fun refreshIngredients(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val response = api.getIngredients()
+            val response = api.getGgIngredients()
             if (response.isSuccessful) {
                 val dtos = response.body() ?: emptyList()
                 ingredientDao.deleteAll()
@@ -40,9 +38,9 @@ class InwardingRepository @Inject constructor(
                     CachedIngredientEntity(
                         id = it.id,
                         name = it.name,
-                        unit = it.unit,
-                        active = it.active,
-                        defaultSupplierName = it.defaultSupplierName,
+                        unit = it.defaultUnit,
+                        active = true, // gg_ingredients no longer has an active column
+                        defaultSupplierName = null, // gg_ingredients uses vendor_id, not supplier name
                     )
                 })
             } else {
@@ -52,12 +50,12 @@ class InwardingRepository @Inject constructor(
     }
 
     suspend fun submitInwardEvent(
-        request: SubmitInwardEventRequest,
+        request: GgInwardingRequest,
         isOnline: Boolean,
     ): Result<Unit> = withContext(Dispatchers.IO) {
         if (isOnline) {
             runCatching {
-                val response = api.insertInwardEvent(request)
+                val response = api.insertGgInwarding(request)
                 if (!response.isSuccessful && response.code() != 201) {
                     val body = response.errorBody()?.string() ?: ""
                     error("Inward event insert failed: ${response.code()} | $body")
@@ -68,7 +66,7 @@ class InwardingRepository @Inject constructor(
                 pendingDao.insertEvent(
                     PendingOperationEventEntity(
                         module = "inwarding",
-                        workerId = request.workerId,
+                        workerId = request.recordedBy,
                         workerName = WorkerIdentityStore.workerName,
                         workerRole = WorkerIdentityStore.workerRole,
                         batchCode = request.lotRef ?: "N/A",
@@ -82,7 +80,7 @@ class InwardingRepository @Inject constructor(
                             put("inward_date", request.inwardDate)
                             put("expiry_date", request.expiryDate ?: JSONObject.NULL)
                             put("lot_ref", request.lotRef ?: JSONObject.NULL)
-                            put("supplier", request.supplier ?: JSONObject.NULL)
+                            put("vendor_id", request.vendorId ?: JSONObject.NULL)
                         }.toString(),
                     )
                 )
@@ -126,63 +124,48 @@ class InwardingRepository @Inject constructor(
         }
     }
 
-    suspend fun getSuppliers(): List<SupplierDto> = withContext(Dispatchers.IO) {
+    suspend fun getVendors(): List<GgVendorDto> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getSuppliers()
+            val response = api.getGgVendors()
             if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
         } catch (e: Exception) { emptyList() }
     }
 
-    suspend fun createSupplier(name: String, contact: String? = null): Result<SupplierDto> = withContext(Dispatchers.IO) {
+    suspend fun createVendor(name: String, contactPhone: String? = null): Result<GgVendorDto> = withContext(Dispatchers.IO) {
         runCatching {
-            val id = "sup-${System.currentTimeMillis()}"
-            val response = api.insertSupplier(CreateSupplierRequest(id = id, name = name, contact = contact))
-            if (!response.isSuccessful) error("Failed to create supplier: ${response.code()}")
-            response.body()?.firstOrNull() ?: SupplierDto(id = id, name = name, contact = contact)
+            val response = api.insertGgVendor(GgVendorInsertRequest(name = name, phone = contactPhone))
+            if (!response.isSuccessful) error("Failed to create vendor: ${response.code()}")
+            response.body()?.firstOrNull() ?: GgVendorDto(id = "vnd-${System.currentTimeMillis()}", name = name, phone = contactPhone)
         }
     }
 
     suspend fun createIngredient(
         name: String,
         unit: String,
-        supplierId: String? = null,
-        supplierName: String? = null,
+        vendorId: String? = null,
     ): Result<CachedIngredientEntity> = withContext(Dispatchers.IO) {
         runCatching {
-            val id = "ing-${System.currentTimeMillis()}"
-            val response = api.insertIngredient(
-                CreateIngredientRequest(
-                    id = id,
+            val response = api.insertGgIngredient(
+                GgIngredientInsertRequest(
                     name = name,
-                    unit = unit,
-                    defaultSupplierId = supplierId,
-                    defaultSupplierName = supplierName,
+                    defaultUnit = unit,
                 )
             )
             if (!response.isSuccessful) error("Failed to create ingredient: ${response.code()}")
             val dto = response.body()?.firstOrNull()
-                ?: IngredientDto(id = id, name = name, unit = unit, defaultSupplierId = supplierId, defaultSupplierName = supplierName)
+                ?: throw IllegalStateException("No ingredient returned from API")
             val entity = CachedIngredientEntity(
                 id = dto.id,
                 name = dto.name,
-                unit = dto.unit,
-                active = dto.active,
-                defaultSupplierName = dto.defaultSupplierName,
+                unit = dto.defaultUnit,
+                active = true,
+                defaultSupplierName = null,
             )
             ingredientDao.insertAll(listOf(entity))
-            // Also record the link in ingredient_suppliers junction table
-            if (supplierId != null) {
-                val linkId = "isl-${System.currentTimeMillis()}"
-                api.insertIngredientSupplierLink(
-                    CreateIngredientSupplierLinkRequest(
-                        id = linkId,
-                        ingredientId = id,
-                        supplierId = supplierId,
-                        isDefault = true,
-                    )
-                )
-            }
             entity
         }
     }
 }
+
+// Import for WorkerIdentityStore
+private val WorkerIdentityStore get() = com.example.gudgum_prod_flow.data.session.WorkerIdentityStore

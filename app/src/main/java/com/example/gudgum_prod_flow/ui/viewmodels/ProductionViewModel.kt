@@ -35,6 +35,7 @@ data class RecipeIngredient(
 @HiltViewModel
 class ProductionViewModel @Inject constructor(
     private val repository: ProductionRepository,
+    private val realtimeManager: com.example.gudgum_prod_flow.data.remote.SupabaseRealtimeManager,
 ) : ViewModel() {
 
     private val _flavors = MutableStateFlow<List<FlavorProfile>>(emptyList())
@@ -83,7 +84,36 @@ class ProductionViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getActiveFlavors().collect { entities ->
                 _flavors.value = entities.map {
-                    FlavorProfile(id = it.id, name = it.name, code = it.code, recipeId = it.recipeId)
+                    FlavorProfile(
+                        id = it.id,
+                        name = it.name,
+                        code = it.code,
+                        recipeId = it.recipeId, // null for gg_flavors — we use flavor.id instead
+                    )
+                }
+            }
+        }
+        // Eagerly refresh from Supabase gg_flavors so dashboard data appears
+        viewModelScope.launch {
+            repository.refreshFlavors()
+        }
+
+        // --- Supabase Realtime: auto-refresh when dashboard makes changes ---
+        realtimeManager.connect()
+        viewModelScope.launch {
+            realtimeManager.tableChanged.collect { table ->
+                when (table) {
+                    "gg_flavors" -> {
+                        repository.refreshFlavors()
+                    }
+                    "gg_recipes" -> {
+                        // If a flavor is currently selected, refresh its recipe lines too
+                        val currentFlavor = _selectedFlavor.value
+                        if (currentFlavor != null) {
+                            val recipeKey = currentFlavor.recipeId ?: currentFlavor.id
+                            repository.refreshRecipeLines(recipeKey)
+                        }
+                    }
                 }
             }
         }
@@ -103,20 +133,19 @@ class ProductionViewModel @Inject constructor(
         _batchCode.value = "" // Reset until generated
         _recipe.value = emptyList()
 
-        // Load recipe lines from cache; refresh from network if needed
-        flavor.recipeId?.let { recipeId ->
-            viewModelScope.launch {
-                if (isOnline) repository.refreshRecipeLines(recipeId)
-                repository.getRecipeLines(recipeId).collect { lines ->
-                    _recipe.value = lines.map {
-                        RecipeIngredient(
-                            ingredientId = it.ingredientId,
-                            name = it.ingredientName,
-                            plannedQty = it.plannedQty.toString(),
-                            actualQty = it.plannedQty.toString(), // Default actual = planned
-                            unit = it.unit,
-                        )
-                    }
+        // Load recipe lines using flavorId (gg_recipes uses flavor_id, not recipe_id)
+        val recipeKey = flavor.recipeId ?: flavor.id
+        viewModelScope.launch {
+            if (isOnline) repository.refreshRecipeLines(recipeKey)
+            repository.getRecipeLines(recipeKey).collect { lines ->
+                _recipe.value = lines.map {
+                    RecipeIngredient(
+                        ingredientId = it.ingredientId,
+                        name = it.ingredientName,
+                        plannedQty = it.plannedQty.toString(),
+                        actualQty = it.plannedQty.toString(), // Default actual = planned
+                        unit = it.unit,
+                    )
                 }
             }
         }
@@ -193,11 +222,13 @@ class ProductionViewModel @Inject constructor(
                 )
             }
 
+            val recipeKey = flavor.recipeId ?: flavor.id
+
             val result = repository.submitBatch(
                 batchCode = batchCode,
                 skuId = flavor.id,
                 skuCode = flavor.code,
-                recipeId = flavor.recipeId ?: "",
+                recipeId = recipeKey,
                 productionDate = _manufacturingDate.value,
                 workerId = WorkerIdentityStore.workerId,
                 plannedYield = _plannedYield.value,

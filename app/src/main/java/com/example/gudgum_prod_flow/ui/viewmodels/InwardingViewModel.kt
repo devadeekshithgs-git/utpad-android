@@ -3,7 +3,7 @@ package com.example.gudgum_prod_flow.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gudgum_prod_flow.data.local.entity.CachedIngredientEntity
-import com.example.gudgum_prod_flow.data.remote.dto.SubmitInwardEventRequest
+import com.example.gudgum_prod_flow.data.remote.dto.GgInwardingRequest
 import com.example.gudgum_prod_flow.data.remote.dto.SubmitReturnEventRequest
 import com.example.gudgum_prod_flow.data.repository.DispatchRepository
 import com.example.gudgum_prod_flow.data.repository.InwardingRepository
@@ -24,6 +24,7 @@ data class Vendor(val id: String, val name: String)
 class InwardingViewModel @Inject constructor(
     private val repository: InwardingRepository,
     private val dispatchRepository: DispatchRepository,
+    private val realtimeManager: com.example.gudgum_prod_flow.data.remote.SupabaseRealtimeManager,
 ) : ViewModel() {
 
     private val _ingredients = MutableStateFlow<List<CachedIngredientEntity>>(emptyList())
@@ -47,14 +48,10 @@ class InwardingViewModel @Inject constructor(
     private val _expiryDate = MutableStateFlow("")
     val expiryDate: StateFlow<String> = _expiryDate.asStateFlow()
 
-    private val _lotRef = MutableStateFlow("")
-    val lotRef: StateFlow<String> = _lotRef.asStateFlow()
-
     private val _supplier = MutableStateFlow("")
     val supplier: StateFlow<String> = _supplier.asStateFlow()
 
-    // Aliases and additional fields expected by InwardingScreen
-    val batchBarcode: StateFlow<String> = _lotRef
+    // Aliases expected by InwardingScreen
     val availableIngredients: StateFlow<List<CachedIngredientEntity>> = _ingredients
 
     private val _selectedVendor = MutableStateFlow<Vendor?>(null)
@@ -111,8 +108,28 @@ class InwardingViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            val suppliers = repository.getSuppliers()
-            _vendors.value = suppliers.map { Vendor(id = it.id, name = it.name) }
+            val vendors = repository.getVendors()
+            _vendors.value = vendors.map { Vendor(id = it.id, name = it.name) }
+        }
+        // Eagerly refresh from Supabase gg_* tables so dashboard data appears
+        viewModelScope.launch {
+            repository.refreshIngredients()
+        }
+
+        // --- Supabase Realtime: auto-refresh when dashboard makes changes ---
+        realtimeManager.connect()
+        viewModelScope.launch {
+            realtimeManager.tableChanged.collect { table ->
+                when (table) {
+                    "gg_ingredients" -> {
+                        repository.refreshIngredients()
+                    }
+                    "gg_vendors" -> {
+                        val vendors = repository.getVendors()
+                        _vendors.value = vendors.map { Vendor(id = it.id, name = it.name) }
+                    }
+                }
+            }
         }
     }
 
@@ -121,8 +138,8 @@ class InwardingViewModel @Inject constructor(
     fun refreshData() {
         viewModelScope.launch {
             repository.refreshIngredients()
-            val suppliers = repository.getSuppliers()
-            _vendors.value = suppliers.map { Vendor(id = it.id, name = it.name) }
+            val vendors = repository.getVendors()
+            _vendors.value = vendors.map { Vendor(id = it.id, name = it.name) }
             if (isOnline) {
                 dispatchRepository.getDispatchedBatches().onSuccess { batches ->
                     _dispatchedBatches.value = batches
@@ -138,13 +155,13 @@ class InwardingViewModel @Inject constructor(
             _addIngredientState.value = SubmitState.Loading
             // Resolve vendor: use existing if name matches, else create a new one
             val existing = _vendors.value.firstOrNull { it.name.equals(vendorName.trim(), ignoreCase = true) }
-            val supplierId: String
+            val vendorId: String
             val supplierName: String
             if (existing != null) {
-                supplierId = existing.id
+                vendorId = existing.id
                 supplierName = existing.name
             } else if (vendorName.isNotBlank()) {
-                val result = repository.createSupplier(vendorName.trim())
+                val result = repository.createVendor(vendorName.trim())
                 if (result.isFailure) {
                     _addIngredientState.value = SubmitState.Error(
                         result.exceptionOrNull()?.message ?: "Failed to create vendor"
@@ -154,17 +171,17 @@ class InwardingViewModel @Inject constructor(
                 val dto = result.getOrThrow()
                 val newVendor = Vendor(id = dto.id, name = dto.name)
                 _vendors.value = _vendors.value + newVendor
-                supplierId = dto.id
+                vendorId = dto.id
                 supplierName = dto.name
             } else {
                 _addIngredientState.value = SubmitState.Error("Please specify a vendor")
                 return@launch
             }
 
-            repository.createIngredient(name.trim(), unit, supplierId, supplierName)
+            repository.createIngredient(name.trim(), unit, vendorId)
                 .onSuccess { entity ->
                     onIngredientSelected(entity)
-                    onVendorSelected(Vendor(id = supplierId, name = supplierName))
+                    onVendorSelected(Vendor(id = vendorId, name = supplierName))
                     _addIngredientState.value = SubmitState.Success("\"${entity.name}\" added")
                 }
                 .onFailure { e ->
@@ -176,7 +193,7 @@ class InwardingViewModel @Inject constructor(
     fun addVendor(name: String, contact: String? = null) {
         viewModelScope.launch {
             _addVendorState.value = SubmitState.Loading
-            repository.createSupplier(name.trim(), contact?.ifBlank { null })
+            repository.createVendor(name.trim(), contact?.ifBlank { null })
                 .onSuccess { dto ->
                     val newVendor = Vendor(id = dto.id, name = dto.name)
                     _vendors.value = _vendors.value + newVendor
@@ -195,21 +212,13 @@ class InwardingViewModel @Inject constructor(
     fun onIngredientSelected(ingredient: CachedIngredientEntity) {
         _selectedIngredient.value = ingredient
         _selectedUnit.value = ingredient.unit // Auto-fill unit from ingredient master
-        // Auto-populate vendor from ingredient's default supplier
-        if (!ingredient.defaultSupplierName.isNullOrBlank()) {
-            val vendor = _vendors.value.firstOrNull { it.name == ingredient.defaultSupplierName }
-                ?: Vendor(id = "auto-${ingredient.id}", name = ingredient.defaultSupplierName)
-            onVendorSelected(vendor)
-        }
     }
 
     fun onQuantityChanged(value: String) { _quantity.value = value }
     fun onInwardDateChanged(value: String) { _inwardDate.value = value }
     fun onExpiryDateChanged(value: String) { _expiryDate.value = value }
-    fun onLotRefChanged(value: String) { _lotRef.value = value }
     fun onSupplierChanged(value: String) { _supplier.value = value }
 
-    fun onBarcodeChanged(value: String) { _lotRef.value = value }
     fun onVendorSelected(vendor: Vendor) {
         _selectedVendor.value = vendor
         _supplier.value = vendor.name
@@ -244,15 +253,15 @@ class InwardingViewModel @Inject constructor(
         viewModelScope.launch {
             _submitState.value = SubmitState.Loading
             val result = repository.submitInwardEvent(
-                request = SubmitInwardEventRequest(
+                request = GgInwardingRequest(
                     ingredientId = ingredient.id,
                     qty = qty,
                     unit = _selectedUnit.value,
+                    vendorId = _selectedVendor.value?.id,
                     inwardDate = _inwardDate.value,
                     expiryDate = _expiryDate.value.ifBlank { null },
-                    lotRef = _lotRef.value.ifBlank { null },
-                    supplier = _supplier.value.ifBlank { null },
-                    workerId = WorkerIdentityStore.workerId,
+                    lotRef = null,
+                    recordedBy = WorkerIdentityStore.workerId,
                 ),
                 isOnline = isOnline,
             )
@@ -310,7 +319,6 @@ class InwardingViewModel @Inject constructor(
         _selectedUnit.value = "kg"
         _inwardDate.value = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         _expiryDate.value = ""
-        _lotRef.value = ""
         _supplier.value = ""
         _billNumber.value = ""
         _billPhotoUri.value = null

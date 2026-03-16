@@ -3,6 +3,7 @@ package com.example.gudgum_prod_flow.data.repository
 import com.example.gudgum_prod_flow.data.local.dao.PendingOperationEventDao
 import com.example.gudgum_prod_flow.data.local.entity.PendingOperationEventEntity
 import com.example.gudgum_prod_flow.data.remote.api.SupabaseApiClient
+import com.example.gudgum_prod_flow.data.remote.dto.DispatchedBatchDto
 import com.example.gudgum_prod_flow.data.remote.dto.GgCustomerDto
 import com.example.gudgum_prod_flow.data.remote.dto.GgDispatchRequest
 import com.example.gudgum_prod_flow.data.session.WorkerIdentityStore
@@ -17,6 +18,14 @@ class DispatchRepository @Inject constructor(
     private val pendingDao: PendingOperationEventDao,
 ) {
     private val api = SupabaseApiClient.api
+
+    suspend fun getDispatchedBatches(): Result<List<DispatchedBatchDto>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val response = api.getDispatchedBatches()
+            if (response.isSuccessful) response.body() ?: emptyList()
+            else error("Failed to load dispatched batches: ${response.code()}")
+        }
+    }
 
     suspend fun getCustomers(): Result<List<GgCustomerDto>> = withContext(Dispatchers.IO) {
         runCatching {

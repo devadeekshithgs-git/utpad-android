@@ -76,6 +76,7 @@ import com.example.gudgum_prod_flow.ui.theme.UtpadTextSecondary
 import com.example.gudgum_prod_flow.ui.theme.UtpadBackground
 import com.example.gudgum_prod_flow.ui.theme.UtpadSurface
 import androidx.compose.material3.TopAppBarDefaults
+import com.example.gudgum_prod_flow.ui.components.SearchableDropdown
 import com.example.gudgum_prod_flow.ui.navigation.AppRoute
 import com.example.gudgum_prod_flow.ui.viewmodels.InwardingViewModel
 import com.example.gudgum_prod_flow.ui.viewmodels.SubmitState
@@ -96,7 +97,6 @@ fun InwardingScreen(
 ) {
     val context = LocalContext.current
     val selectedIngredient by viewModel.selectedIngredient.collectAsState()
-    val batchBarcode by viewModel.batchBarcode.collectAsState()
     val quantity by viewModel.quantity.collectAsState()
     val selectedUnit by viewModel.selectedUnit.collectAsState()
     val expiryDate by viewModel.expiryDate.collectAsState()
@@ -231,68 +231,16 @@ fun InwardingScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth(),
                                     ) {
-                                        var ingredientExpanded by remember { mutableStateOf(false) }
-                                        ExposedDropdownMenuBox(
-                                            expanded = ingredientExpanded,
-                                            onExpandedChange = { ingredientExpanded = it },
+                                        SearchableDropdown(
+                                            items = availableIngredients,
+                                            selectedItem = selectedIngredient,
+                                            onItemSelected = { viewModel.onIngredientSelected(it) },
+                                            itemLabel = { it.name },
+                                            placeholder = "Choose ingredient",
+                                            onAddNewClick = { showAddIngredientDialog = true },
+                                            addNewLabel = "Add New Ingredient",
                                             modifier = Modifier.weight(1f),
-                                        ) {
-                                            OutlinedTextField(
-                                                value = selectedIngredient?.name ?: "",
-                                                onValueChange = {},
-                                                readOnly = true,
-                                                placeholder = { Text("Choose ingredient", color = UtpadTextSecondary) },
-                                                trailingIcon = {
-                                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = ingredientExpanded)
-                                                },
-                                                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                                                    focusedBorderColor = UtpadPrimary,
-                                                    unfocusedBorderColor = UtpadOutline,
-                                                    focusedContainerColor = UtpadBackground,
-                                                    unfocusedContainerColor = UtpadSurface,
-                                                    focusedTextColor = UtpadTextPrimary,
-                                                    unfocusedTextColor = UtpadTextPrimary
-                                                ),
-                                                shape = RoundedCornerShape(16.dp),
-                                                modifier = Modifier
-                                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                                    .fillMaxWidth(),
-                                                singleLine = true,
-                                            )
-                                            ExposedDropdownMenu(
-                                                expanded = ingredientExpanded,
-                                                onDismissRequest = { ingredientExpanded = false },
-                                            ) {
-                                                if (availableIngredients.isEmpty()) {
-                                                    DropdownMenuItem(
-                                                        text = { Text("No ingredients for this vendor") },
-                                                        onClick = { ingredientExpanded = false },
-                                                        enabled = false
-                                                    )
-                                                } else {
-                                                    availableIngredients.forEach { ingredient ->
-                                                        DropdownMenuItem(
-                                                            text = { Text(ingredient.name) },
-                                                            onClick = {
-                                                                viewModel.onIngredientSelected(ingredient)
-                                                                ingredientExpanded = false
-                                                            },
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        IconButton(
-                                            onClick = { showAddIngredientDialog = true },
-                                            modifier = Modifier.size(52.dp),
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Filled.Add,
-                                                contentDescription = "Add ingredient",
-                                                tint = UtpadPrimary,
-                                            )
-                                        }
+                                        )
                                     }
                                 }
                                 
@@ -304,66 +252,15 @@ fun InwardingScreen(
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    var vendorExpanded by remember { mutableStateOf(false) }
-                                    ExposedDropdownMenuBox(
-                                        expanded = vendorExpanded,
-                                        onExpandedChange = { vendorExpanded = it },
-                                    ) {
-                                        OutlinedTextField(
-                                            value = selectedVendor?.name ?: "",
-                                            onValueChange = {},
-                                            readOnly = true,
-                                            placeholder = { Text("Select vendor...", color = UtpadTextSecondary) },
-                                            trailingIcon = {
-                                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = vendorExpanded)
-                                            },
-                                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = UtpadPrimary,
-                                                unfocusedBorderColor = UtpadOutline,
-                                                focusedContainerColor = UtpadBackground,
-                                                unfocusedContainerColor = UtpadSurface,
-                                                focusedTextColor = UtpadTextPrimary,
-                                                unfocusedTextColor = UtpadTextPrimary
-                                            ),
-                                            shape = RoundedCornerShape(16.dp),
-                                            modifier = Modifier
-                                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                                .fillMaxWidth(),
-                                            singleLine = true,
-                                        )
-                                        ExposedDropdownMenu(
-                                            expanded = vendorExpanded,
-                                            onDismissRequest = { vendorExpanded = false },
-                                        ) {
-                                            if (vendors.isEmpty()) {
-                                                DropdownMenuItem(
-                                                    text = { Text("No vendors yet", color = UtpadTextSecondary) },
-                                                    onClick = { vendorExpanded = false },
-                                                    enabled = false,
-                                                )
-                                            } else {
-                                                vendors.forEach { vendor ->
-                                                    DropdownMenuItem(
-                                                        text = { Text(vendor.name) },
-                                                        onClick = {
-                                                            viewModel.onVendorSelected(vendor)
-                                                            vendorExpanded = false
-                                                        },
-                                                    )
-                                                }
-                                            }
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(Icons.Filled.Add, contentDescription = null, tint = UtpadPrimary, modifier = Modifier.size(16.dp))
-                                                        Spacer(Modifier.width(6.dp))
-                                                        Text("Add New Vendor", color = UtpadPrimary)
-                                                    }
-                                                },
-                                                onClick = { vendorExpanded = false; showAddVendorDialog = true },
-                                            )
-                                        }
-                                    }
+                                    SearchableDropdown(
+                                        items = vendors,
+                                        selectedItem = selectedVendor,
+                                        onItemSelected = { viewModel.onVendorSelected(it) },
+                                        itemLabel = { it.name },
+                                        placeholder = "Select vendor...",
+                                        onAddNewClick = { showAddVendorDialog = true },
+                                        addNewLabel = "Add New Vendor",
+                                    )
                                 }
                             }
                         }
@@ -378,40 +275,7 @@ fun InwardingScreen(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(14.dp),
                             ) {
-                                // Removed Select Ingredient
-                        Column {
-                            Text(
-                                text = "BATCH BARCODE",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = UtpadTextSecondary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                OutlinedTextField(
-                                    value = batchBarcode,
-                                    onValueChange = viewModel::onBarcodeChanged,
-                                    placeholder = { Text("Scan or enter barcode") },
-                                    singleLine = true,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                BarcodeScannerButton(
-                                    prompt = "Scan inwarding batch barcode",
-                                    onBarcodeScanned = viewModel::onBarcodeChanged,
-                                    onScanError = { message ->
-                                        if (message != "Scan cancelled") {
-                                            coroutineScope.launch {
-                                                snackbarHostState.showSnackbar(message)
-                                            }
-                                        }
-                                    },
-                                )
-                            }
-                        }
+
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),

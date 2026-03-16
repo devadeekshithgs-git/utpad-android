@@ -30,17 +30,17 @@ class ProductionRepository @Inject constructor(
     // Returns flavors from Room cache; call refreshFlavors() when online to populate
     fun getActiveFlavors(): Flow<List<CachedFlavorEntity>> = flavorDao.getActiveFlavors()
 
-    // Returns BOM lines from Room cache for the given recipeId
-    fun getRecipeLines(recipeId: String): Flow<List<CachedRecipeLineEntity>> =
-        recipeLineDao.getByRecipeId(recipeId)
+    // Returns BOM lines from Room cache for the given flavorId
+    fun getRecipeLines(flavorId: String): Flow<List<CachedRecipeLineEntity>> =
+        recipeLineDao.getByRecipeId(flavorId)
 
     // Returns open batches from Room cache
     fun getOpenBatches(): Flow<List<CachedBatchEntity>> = batchDao.getOpenBatches()
 
-    // Refreshes flavor cache from Supabase — call when online
+    // Refreshes flavor cache from Supabase gg_flavors table
     suspend fun refreshFlavors(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val response = api.getFlavors()
+            val response = api.getGgFlavors()
             if (response.isSuccessful) {
                 val dtos = response.body() ?: emptyList()
                 flavorDao.deleteAll()
@@ -49,10 +49,10 @@ class ProductionRepository @Inject constructor(
                         id = it.id,
                         name = it.name,
                         code = it.code,
-                        recipeId = it.recipeId,
+                        recipeId = null, // gg_flavors has no recipeId; we use flavor.id to load recipes
                         active = it.active,
-                        yieldThreshold = it.yieldThreshold,
-                        shelfLifeDays = it.shelfLifeDays,
+                        yieldThreshold = null,
+                        shelfLifeDays = null,
                     )
                 })
             } else {
@@ -61,22 +61,27 @@ class ProductionRepository @Inject constructor(
         }
     }
 
-    // Refreshes recipe lines for a specific recipe
-    suspend fun refreshRecipeLines(recipeId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    // Refreshes recipe lines for a specific flavor from gg_recipes table
+    suspend fun refreshRecipeLines(flavorId: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val response = api.getRecipeLines(recipeId = "eq.$recipeId")
+            val response = api.getGgRecipe(flavorId = "eq.$flavorId")
             if (response.isSuccessful) {
-                val dtos = response.body() ?: emptyList()
-                recipeLineDao.deleteByRecipeId(recipeId)
-                recipeLineDao.insertAll(dtos.map {
-                    CachedRecipeLineEntity(
-                        recipeId = it.recipeId,
-                        ingredientId = it.ingredientId,
-                        ingredientName = it.ingredient?.name ?: it.ingredientId,
-                        plannedQty = it.qty,
-                        unit = it.ingredient?.unit ?: "kg",
-                    )
-                })
+                val recipes = response.body() ?: emptyList()
+                val targetRecipe = recipes.firstOrNull()
+                
+                recipeLineDao.deleteByRecipeId(flavorId)
+                
+                if (targetRecipe != null) {
+                    recipeLineDao.insertAll(targetRecipe.ingredients.map { ingredient ->
+                        CachedRecipeLineEntity(
+                            recipeId = flavorId, // Use flavorId as the recipe key
+                            ingredientId = ingredient.ingredientId,
+                            ingredientName = ingredient.ingredientName,
+                            plannedQty = ingredient.quantity,
+                            unit = ingredient.unit,
+                        )
+                    })
+                }
             } else {
                 error("Recipe line refresh failed: ${response.code()}")
             }

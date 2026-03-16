@@ -262,26 +262,29 @@ data class GgFlavorDto(
 data class GgIngredientDto(
     val id: String,
     val name: String,
-    val unit: String,
-    val active: Boolean = true,
-    @SerialName("default_vendor_id") val defaultVendorId: String? = null,
+    @SerialName("default_unit") val defaultUnit: String,
 )
 
 @Serializable
-data class GgRecipeLineDto(
+data class GgRecipeIngredientDto(
+    val unit: String,
+    val quantity: Double,
+    val ingredientId: String,
+    val ingredientName: String,
+)
+
+@Serializable
+data class GgRecipeDto(
     val id: String,
     @SerialName("flavor_id") val flavorId: String,
-    @SerialName("ingredient_id") val ingredientId: String,
-    @SerialName("qty_kg") val qtyKg: Double,
-    val ingredient: GgIngredientDto? = null,
+    val ingredients: List<GgRecipeIngredientDto> = emptyList(),
 )
 
 @Serializable
 data class GgVendorDto(
     val id: String,
     val name: String,
-    @SerialName("contact_phone") val contactPhone: String? = null,
-    val active: Boolean = true,
+    val phone: String? = null,
 )
 
 @Serializable
@@ -327,14 +330,13 @@ data class GgReturnRequest(
 @Serializable
 data class GgVendorInsertRequest(
     val name: String,
-    @SerialName("contact_phone") val contactPhone: String? = null,
+    val phone: String? = null,
 )
 
 @Serializable
 data class GgIngredientInsertRequest(
     val name: String,
-    val unit: String,
-    @SerialName("default_vendor_id") val defaultVendorId: String? = null,
+    @SerialName("default_unit") val defaultUnit: String,
 )
 
 @Serializable

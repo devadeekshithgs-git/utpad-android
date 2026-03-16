@@ -101,7 +101,7 @@ class SyncWorker @AssistedInject constructor(
             val payload = JSONObject(payloadJson)
             // Look up batch UUID
             val batchResp = SupabaseApiClient.api.getGgBatchByCode(batchCode = "eq.$batchCode")
-            val batchId = if (batchResp.isSuccessful) batchResp.body()?.firstOrNull()?.id else null
+            val batchId: String = (if (batchResp.isSuccessful) batchResp.body()?.firstOrNull()?.id else null)
                 ?: return false
             val resp = SupabaseApiClient.api.insertGgPacking(
                 GgPackingRequest(
@@ -122,7 +122,7 @@ class SyncWorker @AssistedInject constructor(
             val batchCode = payload.getString("batch_code")
             // Look up batch UUID
             val batchResp = SupabaseApiClient.api.getGgBatchByCode(batchCode = "eq.$batchCode")
-            val batchId = if (batchResp.isSuccessful) batchResp.body()?.firstOrNull()?.id else null
+            val batchId: String = (if (batchResp.isSuccessful) batchResp.body()?.firstOrNull()?.id else null)
                 ?: return false
             val resp = SupabaseApiClient.api.insertGgDispatch(
                 GgDispatchRequest(

@@ -1,12 +1,28 @@
 package com.example.gudgum_prod_flow.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.os.Build
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
     primary = md_theme_light_primary,
@@ -41,10 +57,49 @@ fun GudGumProdFlowTheme(
     darkTheme: Boolean = false, // Force Light Theme
     content: @Composable () -> Unit
 ) {
+    val view = LocalView.current
+
+    if (!view.isInEditMode) {
+        val window = view.context.findActivity()?.window
+        SideEffect {
+            window?.let {
+                val statusBarArgb = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    Color.Transparent.toArgb()
+                } else {
+                    UtpadStatusBar.toArgb()
+                }
+                it.statusBarColor = statusBarArgb
+                WindowCompat.getInsetsController(it, view).isAppearanceLightStatusBars = false
+            }
+        }
+    }
+
     MaterialTheme(
         colorScheme = LightColorScheme,
         typography = Typography,
         shapes = UtpadShapes,
-        content = content
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            content()
+            StatusBarProtection(color = UtpadStatusBar)
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.StatusBarProtection(color: Color) {
+    // Android 15+ keeps system bars transparent; render the requested color behind the status-bar inset.
+    Box(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+            .windowInsetsTopHeight(WindowInsets.statusBars)
+            .background(color),
     )
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

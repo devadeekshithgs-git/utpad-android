@@ -98,6 +98,11 @@ dependencies {
     implementation(libs.okhttp.core)
     implementation(libs.okhttp.logging)
 
+    // Supabase Realtime
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.realtime.kt)
+    implementation(libs.ktor.client.okhttp)
+
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.retrofit.kotlinx.serialization)

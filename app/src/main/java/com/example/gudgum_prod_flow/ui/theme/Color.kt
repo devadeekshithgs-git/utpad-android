@@ -15,6 +15,7 @@ val UtpadSuccess = Color(0xFF16A34A)
 val UtpadWarning = Color(0xFFEAB308)
 val UtpadError = Color(0xFFDC2626)
 val UtpadOutline = Color(0xFFE2E8F0)
+val UtpadStatusBar = Color(0xFF237227)
 
 val md_theme_light_primary = UtpadPrimary
 val md_theme_light_onPrimary = Color.White

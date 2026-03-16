@@ -56,6 +56,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.gudgum_prod_flow.ui.components.SearchableDropdown
 import com.example.gudgum_prod_flow.ui.navigation.AppRoute
 import com.example.gudgum_prod_flow.ui.viewmodels.ProductionViewModel
 import com.example.gudgum_prod_flow.ui.viewmodels.SubmitState
@@ -183,46 +184,13 @@ fun ProductionScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            var flavorExpanded by remember { mutableStateOf(false) }
-                            ExposedDropdownMenuBox(
-                                expanded = flavorExpanded,
-                                onExpandedChange = { flavorExpanded = it },
-                            ) {
-                                OutlinedTextField(
-                                    value = selectedFlavor?.name ?: "",
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    placeholder = { Text("Select Flavor...") },
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = flavorExpanded) },
-                                    modifier = Modifier
-                                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                        .fillMaxWidth(),
-                                    singleLine = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = UtpadPrimary,
-                                        unfocusedBorderColor = UtpadOutline,
-                                        focusedContainerColor = UtpadBackground,
-                                        unfocusedContainerColor = UtpadSurface,
-                                        focusedTextColor = UtpadTextPrimary,
-                                        unfocusedTextColor = UtpadTextPrimary
-                                    ),
-                                    shape = RoundedCornerShape(16.dp),
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = flavorExpanded,
-                                    onDismissRequest = { flavorExpanded = false },
-                                ) {
-                                    viewModel.flavorProfiles.forEach { flavor ->
-                                        DropdownMenuItem(
-                                            text = { Text(flavor.name) },
-                                            onClick = {
-                                                viewModel.onFlavorSelected(flavor)
-                                                flavorExpanded = false
-                                            },
-                                        )
-                                    }
-                                }
-                            }
+                            SearchableDropdown(
+                                items = viewModel.flavorProfiles,
+                                selectedItem = selectedFlavor,
+                                onItemSelected = { viewModel.onFlavorSelected(it) },
+                                itemLabel = { it.name },
+                                placeholder = "Select Flavor...",
+                            )
                         }
 
                         // Batch Code (read-only)
